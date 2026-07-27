@@ -32,8 +32,14 @@ tar_sum=$(sha256sum "$tmp/portable.tar.gz" | awk '{print $1}')
 lic_sum=$(sha256sum "$tmp/LICENSE" | awk '{print $1}')
 rules_sum=$(sha256sum 99-flydigi-fan.rules | awk '{print $1}')
 
-# Refresh tray PNG from upstream portable appicon (committed source).
-cp -f "$tmp"/THRM-linux-amd64/appicon.png tray-icon.png
+# Refresh tray PNG from upstream portable appicon (64px for StatusNotifier IconPixmap).
+python - "$tmp/THRM-linux-amd64/appicon.png" tray-icon.png <<'PY'
+from pathlib import Path
+import sys
+from PIL import Image
+src, dst = Path(sys.argv[1]), Path(sys.argv[2])
+Image.open(src).convert("RGBA").resize((64, 64), Image.Resampling.LANCZOS).save(dst, format="PNG", optimize=True)
+PY
 tray_sum=$(sha256sum tray-icon.png | awk '{print $1}')
 
 # Locate embedded icon.ico span in the new thrm-core (run once per bump).
@@ -120,6 +126,7 @@ pkgbase = thrm-bin
 	depends = gtk3
 	depends = webkit2gtk-4.1
 	depends = hidapi
+	makedepends = python
 	optdepends = bluez: BS1 BLE support
 	provides = thrm
 	conflicts = thrm

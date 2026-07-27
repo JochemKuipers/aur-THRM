@@ -1,10 +1,11 @@
 pkgbase = thrm-bin
 	pkgdesc = Flydigi BS-series laptop cooler controller (prebuilt)
 	pkgver = 3.6.2
-	pkgrel = 4
+	pkgrel = 5
 	url = https://github.com/TIANLI0/THRM
 	arch = x86_64
 	license = MIT
+	makedepends = python
 	depends = gtk3
 	depends = webkit2gtk-4.1
 	depends = hidapi
@@ -20,6 +21,6 @@ pkgbase = thrm-bin
 	sha256sums = 3d146a8e42a58d076f9719d3b4af2e653e5b4ae5b3fcbda22a8fb3c33c7bbf4f
 	sha256sums = bb4f94dbe3dcfdc66e27d35cae627a73c9e8f66ec792971e569d272893b08ac6
 	sha256sums = d267175637ab454a65e12fe619e244d4d202ade38ecf4c12b4e254a90ecdfbc8
-	sha256sums = c81b2923d5377a6b1f629f0d4a8127001b973e7e6dd72d5d383c205ba327b966
+	sha256sums = d4be9169291886ef90c0fdd2bf70f02140ca13faddb14a2d08ea0307495ec8cd
 
 pkgname = thrm-bin
