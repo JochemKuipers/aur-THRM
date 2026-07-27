@@ -1,0 +1,7 @@
+# Build artifacts
+*.pkg.tar.zst
+*.pkg.tar.xz
+src/
+pkg/
+THRM-linux-amd64-portable.tar.gz
+LICENSE
