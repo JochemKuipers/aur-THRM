@@ -1,7 +1,7 @@
 pkgbase = thrm-bin
 	pkgdesc = Flydigi BS-series laptop cooler controller (prebuilt)
 	pkgver = 3.6.2
-	pkgrel = 1
+	pkgrel = 3
 	url = https://github.com/TIANLI0/THRM
 	arch = x86_64
 	license = MIT
@@ -15,7 +15,9 @@ pkgbase = thrm-bin
 	options = !debug
 	source = https://github.com/TIANLI0/THRM/releases/download/v3.6.2/THRM-linux-amd64-portable.tar.gz
 	source = LICENSE::https://raw.githubusercontent.com/TIANLI0/THRM/v3.6.2/LICENSE
+	source = 99-flydigi-fan.rules
 	sha256sums = 3d146a8e42a58d076f9719d3b4af2e653e5b4ae5b3fcbda22a8fb3c33c7bbf4f
 	sha256sums = bb4f94dbe3dcfdc66e27d35cae627a73c9e8f66ec792971e569d272893b08ac6
+	sha256sums = d267175637ab454a65e12fe619e244d4d202ade38ecf4c12b4e254a90ecdfbc8
 
 pkgname = thrm-bin

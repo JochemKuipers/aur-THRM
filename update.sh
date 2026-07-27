@@ -23,9 +23,10 @@ tar_url="https://github.com/TIANLI0/THRM/releases/download/v${ver}/THRM-linux-am
 lic_url="https://raw.githubusercontent.com/TIANLI0/THRM/v${ver}/LICENSE"
 tar_sum=$(curl -fsSL "$tar_url" | sha256sum | awk '{print $1}')
 lic_sum=$(curl -fsSL "$lic_url" | sha256sum | awk '{print $1}')
+# Local patched udev rules — keep existing checksum from PKGBUILD.
+rules_sum=$(awk '/^sha256sums=/{c=1; next} c && /^[[:space:]]*'\''/{n++; if(n==3){gsub(/['\'' ]/,""); print; exit}}' PKGBUILD)
 
-# Rewrite version + checksums in place.
-awk -v ver="$ver" -v tar_sum="$tar_sum" -v lic_sum="$lic_sum" '
+awk -v ver="$ver" -v tar_sum="$tar_sum" -v lic_sum="$lic_sum" -v rules_sum="$rules_sum" '
   /^pkgver=/ { print "pkgver=" ver; next }
   /^pkgrel=/ { print "pkgrel=1"; next }
   /^sha256sums=/,/^)/ {
@@ -33,6 +34,7 @@ awk -v ver="$ver" -v tar_sum="$tar_sum" -v lic_sum="$lic_sum" '
       print "sha256sums=("
       print "  '\''" tar_sum "'\''"
       print "  '\''" lic_sum "'\''"
+      print "  '\''" rules_sum "'\''"
       print ")"
       skip = 1
       next
@@ -44,7 +46,6 @@ awk -v ver="$ver" -v tar_sum="$tar_sum" -v lic_sum="$lic_sum" '
 ' PKGBUILD > PKGBUILD.tmp
 mv PKGBUILD.tmp PKGBUILD
 
-# Keep .SRCINFO in sync without requiring makepkg (CI runs on Ubuntu).
 cat > .SRCINFO <<EOF
 pkgbase = thrm-bin
 	pkgdesc = Flydigi BS-series laptop cooler controller (prebuilt)
@@ -63,8 +64,10 @@ pkgbase = thrm-bin
 	options = !debug
 	source = https://github.com/TIANLI0/THRM/releases/download/v${ver}/THRM-linux-amd64-portable.tar.gz
 	source = LICENSE::https://raw.githubusercontent.com/TIANLI0/THRM/v${ver}/LICENSE
+	source = 99-flydigi-fan.rules
 	sha256sums = ${tar_sum}
 	sha256sums = ${lic_sum}
+	sha256sums = ${rules_sum}
 
 pkgname = thrm-bin
 EOF
