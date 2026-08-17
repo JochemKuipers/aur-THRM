@@ -41,6 +41,7 @@ prepare() {
   mv "$srcdir/THRM-linux-amd64/appicon.png" "$srcdir/thrm.png"
 }
 
+
 package() {
   install -Dm755 "${srcdir}/thrm" "${pkgdir}/usr/bin/thrm"
   install -Dm755 "${srcdir}/thrm-core" "${pkgdir}/usr/bin/thrm-core"
