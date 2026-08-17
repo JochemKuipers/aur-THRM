@@ -80,14 +80,15 @@ printsrcinfo() {
       local d
       d=$(mktemp -d)
       cp PKGBUILD "$d/"
-      chown nobody "$d" "$d/PKGBUILD"
-      (cd "$d" && su nobody -s /bin/bash -c 'makepkg --printsrcinfo')
+      id srcinfo >/dev/null 2>&1 || useradd -M -N -s /bin/bash srcinfo
+      chown srcinfo "$d" "$d/PKGBUILD"
+      (cd "$d" && su srcinfo -c 'makepkg --printsrcinfo')
     else
       makepkg --printsrcinfo
     fi
   elif command -v docker >/dev/null 2>&1; then
     docker run --rm -v "$PWD/PKGBUILD":/pkg/PKGBUILD:ro -w /pkg archlinux:base-devel \
-      bash -c 'install -d -o nobody /tmp/p && cp /pkg/PKGBUILD /tmp/p && cd /tmp/p && su nobody -s /bin/bash -c "makepkg --printsrcinfo"'
+      bash -c 'useradd -M -N -s /bin/bash srcinfo && install -d -o srcinfo /tmp/p && cp /pkg/PKGBUILD /tmp/p && cd /tmp/p && su srcinfo -c "makepkg --printsrcinfo"'
   else
     echo "need makepkg or docker to generate .SRCINFO" >&2
     exit 1
