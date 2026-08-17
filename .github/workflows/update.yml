@@ -17,8 +17,7 @@ jobs:
       - name: Bump to latest upstream release
         id: bump
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pil
+          sed -i 's/\r$//' update.sh
           chmod +x update.sh
           before=$(git status --porcelain)
           ./update.sh
@@ -35,7 +34,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           ver=$(sed -n 's/^pkgver=//p' PKGBUILD)
-          git add PKGBUILD .SRCINFO tray-icon.png
+          git add PKGBUILD .SRCINFO
           git commit -m "chore: bump thrm-bin to ${ver}"
           git push
 
@@ -59,11 +58,12 @@ jobs:
             git clone ssh://aur@aur.archlinux.org/thrm-bin.git "$aur_dir"
           fi
 
-          cp PKGBUILD .SRCINFO tray-icon.png "$aur_dir/"
+          cp PKGBUILD .SRCINFO "$aur_dir/"
           cd "$aur_dir"
           git config user.name 'Jochem Kuipers'
           git config user.email 'jochem@kuipers.cc'
-          git add PKGBUILD .SRCINFO tray-icon.png
+          git rm -f --ignore-unmatch tray-icon.png 99-flydigi-fan.rules
+          git add PKGBUILD .SRCINFO
           if git diff --cached --quiet; then
             echo "AUR already up to date"
             exit 0
@@ -73,4 +73,3 @@ jobs:
           rel=$(sed -n 's/^pkgrel=//p' PKGBUILD)
           git commit -m "Update to ${ver}-${rel}"
           git push
-
