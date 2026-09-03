@@ -50,12 +50,29 @@ jobs:
           printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur
           chmod 600 ~/.ssh/aur
           ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
-          export GIT_SSH_COMMAND='ssh -i ~/.ssh/aur -o IdentitiesOnly=yes'
+          export GIT_SSH_COMMAND='ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes'
+
+          echo "Running AUR SSH preflight check..."
+          if ! ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes aur@aur.archlinux.org true; then
+            echo "AUR SSH preflight failed: remote account/repo access rejected before clone." >&2
+            echo "Verify the AUR account status and package permissions for thrm-bin." >&2
+            exit 1
+          fi
 
           aur_dir=$(mktemp -d)
-          if ! git clone ssh://aur@aur.archlinux.org/thrm-bin.git "$aur_dir"; then
-            ssh -i ~/.ssh/aur -o IdentitiesOnly=yes aur@aur.archlinux.org setup-repo thrm-bin
-            git clone ssh://aur@aur.archlinux.org/thrm-bin.git "$aur_dir"
+          if ! clone_err=$(git clone ssh://aur@aur.archlinux.org/thrm-bin.git "$aur_dir" 2>&1); then
+            echo "Initial AUR clone failed; attempting setup-repo thrm-bin..." >&2
+            echo "$clone_err" >&2
+            if ! setup_err=$(ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes aur@aur.archlinux.org setup-repo thrm-bin 2>&1); then
+              echo "AUR setup-repo failed; cannot initialize/access thrm-bin." >&2
+              echo "$setup_err" >&2
+              exit 1
+            fi
+            if ! retry_clone_err=$(git clone ssh://aur@aur.archlinux.org/thrm-bin.git "$aur_dir" 2>&1); then
+              echo "AUR clone failed after setup-repo; verify account status and thrm-bin permissions." >&2
+              echo "$retry_clone_err" >&2
+              exit 1
+            fi
           fi
 
           cp PKGBUILD .SRCINFO "$aur_dir/"
