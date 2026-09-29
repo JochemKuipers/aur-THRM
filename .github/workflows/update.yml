@@ -55,7 +55,8 @@ jobs:
           export GIT_SSH_COMMAND='ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes'
 
           echo "Running AUR SSH preflight check..."
-          if ! ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes aur@aur.archlinux.org true; then
+          # AUR's SSH forced-command rejects shell builtins like `true`; use `help`.
+          if ! ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes aur@aur.archlinux.org help >/dev/null; then
             echo "AUR SSH preflight failed: remote account/repo access rejected before clone." >&2
             echo "Verify the AUR account status and package permissions for thrm-bin." >&2
             exit 1
