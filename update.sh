@@ -1,34 +1,55 @@
 #!/usr/bin/env bash
-# Rebuild PKGBUILD/.SRCINFO from TIANLI0/THRM's PKGBUILD + the portable release.
+# Rebuild PKGBUILD/.SRCINFO from upstream PKGBUILD + the portable release.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-api="${GITHUB_API_URL:-https://api.github.com}/repos/TIANLI0/THRM/releases/latest"
-tag=$(curl -fsSL "$api" | jq -r '.tag_name')
+UPSTREAM_REPO="${UPSTREAM_REPO:-TIANLI0/THRM}"
+api="${GITHUB_API_URL:-https://api.github.com}/repos/${UPSTREAM_REPO}/releases/latest"
+
+curl_auth=()
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  curl_auth=(-H "Authorization: Bearer ${GITHUB_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28")
+fi
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+http_code=$(curl -sS "${curl_auth[@]}" -o "$tmp/latest.json" -w "%{http_code}" "$api" || true)
+case "$http_code" in
+  200) ;;
+  404)
+    echo "upstream ${UPSTREAM_REPO} has no latest release (HTTP 404); leaving package unchanged" >&2
+    exit 0
+    ;;
+  *)
+    echo "failed to resolve latest release for ${UPSTREAM_REPO}: HTTP ${http_code:-curl-error}" >&2
+    [[ -s "$tmp/latest.json" ]] && cat "$tmp/latest.json" >&2
+    exit 1
+    ;;
+esac
+
+tag=$(jq -r '.tag_name // empty' "$tmp/latest.json")
 [[ -n "$tag" && "$tag" != null ]] || { echo "failed to resolve latest tag" >&2; exit 1; }
 ver="${tag#v}"
 ver="${ver#V}"
 
 echo "syncing $ver from upstream PKGBUILD"
 
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-
-curl -fsSL "https://raw.githubusercontent.com/TIANLI0/THRM/v${ver}/PKGBUILD" -o "$tmp/up.PKGBUILD"
-curl -fsSL "https://github.com/TIANLI0/THRM/releases/download/v${ver}/THRM-linux-amd64-portable.tar.gz" -o "$tmp/portable.tar.gz"
-curl -fsSL "https://raw.githubusercontent.com/TIANLI0/THRM/v${ver}/packaging/linux/thrm.desktop" -o "$tmp/thrm.desktop"
-curl -fsSL "https://raw.githubusercontent.com/TIANLI0/THRM/v${ver}/LICENSE" -o "$tmp/LICENSE"
+curl -fsSL "https://raw.githubusercontent.com/${UPSTREAM_REPO}/v${ver}/PKGBUILD" -o "$tmp/up.PKGBUILD"
+curl -fsSL "https://github.com/${UPSTREAM_REPO}/releases/download/v${ver}/THRM-linux-amd64-portable.tar.gz" -o "$tmp/portable.tar.gz"
+curl -fsSL "https://raw.githubusercontent.com/${UPSTREAM_REPO}/v${ver}/packaging/linux/thrm.desktop" -o "$tmp/thrm.desktop"
+curl -fsSL "https://raw.githubusercontent.com/${UPSTREAM_REPO}/v${ver}/LICENSE" -o "$tmp/LICENSE"
 
 tar_sum=$(sha256sum "$tmp/portable.tar.gz" | awk '{print $1}')
 desk_sum=$(sha256sum "$tmp/thrm.desktop" | awk '{print $1}')
 lic_sum=$(sha256sum "$tmp/LICENSE" | awk '{print $1}')
 
-python3 - "$tmp/up.PKGBUILD" "$ver" "$tar_sum" "$desk_sum" "$lic_sum" <<'PY'
+python3 - "$tmp/up.PKGBUILD" "$ver" "$tar_sum" "$desk_sum" "$lic_sum" "$UPSTREAM_REPO" <<'PY'
 import re, sys
 from pathlib import Path
 
-up, ver, tar_sum, desk_sum, lic_sum = sys.argv[1:6]
+up, ver, tar_sum, desk_sum, lic_sum, upstream = sys.argv[1:7]
 text = Path(up).read_text()
 
 text = re.sub(
@@ -48,9 +69,9 @@ text = re.sub(
 text = re.sub(
     r"(?:^# This PKGBUILD.*\n(?:^# .*\n)*)?^source=\([^)]*\)\nsha256sums=\([^)]*\)\n",
     f"""source=(
-  "https://github.com/TIANLI0/THRM/releases/download/v${{pkgver}}/THRM-linux-amd64-portable.tar.gz"
-  "thrm.desktop::https://raw.githubusercontent.com/TIANLI0/THRM/v${{pkgver}}/packaging/linux/thrm.desktop"
-  "LICENSE::https://raw.githubusercontent.com/TIANLI0/THRM/v${{pkgver}}/LICENSE"
+  "https://github.com/{upstream}/releases/download/v${{pkgver}}/THRM-linux-amd64-portable.tar.gz"
+  "thrm.desktop::https://raw.githubusercontent.com/{upstream}/v${{pkgver}}/packaging/linux/thrm.desktop"
+  "LICENSE::https://raw.githubusercontent.com/{upstream}/v${{pkgver}}/LICENSE"
 )
 sha256sums=(
   '{tar_sum}'

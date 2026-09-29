@@ -16,6 +16,8 @@ jobs:
 
       - name: Bump to latest upstream release
         id: bump
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           sed -i 's/\r$//' update.sh
           chmod +x update.sh
